@@ -514,4 +514,183 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   });
+
+  // --- PASTE INSPECTOR SECTION LOGIC ---
+  const pasteInput = document.getElementById("paste-input");
+  const pasteFromClipboardBtn = document.getElementById("paste-from-clipboard-btn");
+  const clearPasteBtn = document.getElementById("clear-paste-btn");
+  const analyzePasteBtn = document.getElementById("analyze-paste-btn");
+  const pasteStats = document.getElementById("paste-stats");
+  const pasteAnalysisResult = document.getElementById("paste-analysis-result");
+  const pasteSampleBtns = document.querySelectorAll(".paste-sample-btn");
+
+  const updatePasteStats = () => {
+    if (!pasteInput || !pasteStats) return;
+    const text = pasteInput.value;
+    const chars = text.length;
+    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+    pasteStats.innerText = `${chars} characters | ${words} words`;
+  };
+
+  if (pasteInput) {
+    pasteInput.addEventListener("input", updatePasteStats);
+  }
+
+  // Sample Notice buttons click
+  pasteSampleBtns.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const sampleText = btn.getAttribute("data-sample");
+      if (pasteInput && sampleText) {
+        pasteInput.value = sampleText;
+        updatePasteStats();
+        runPasteAnalysis();
+      }
+    });
+  });
+
+  // Paste from clipboard button
+  if (pasteFromClipboardBtn && pasteInput) {
+    pasteFromClipboardBtn.addEventListener("click", async () => {
+      try {
+        if (navigator.clipboard && navigator.clipboard.readText) {
+          const clipboardText = await navigator.clipboard.readText();
+          if (clipboardText) {
+            pasteInput.value = clipboardText;
+            updatePasteStats();
+            runPasteAnalysis();
+          } else {
+            pasteInput.focus();
+          }
+        } else {
+          pasteInput.focus();
+        }
+      } catch (err) {
+        // Fallback to focusing textarea
+        pasteInput.focus();
+      }
+    });
+  }
+
+  // Clear paste button
+  if (clearPasteBtn && pasteInput) {
+    clearPasteBtn.addEventListener("click", () => {
+      pasteInput.value = "";
+      updatePasteStats();
+      if (pasteAnalysisResult) pasteAnalysisResult.style.display = "none";
+    });
+  }
+
+  // Run Analysis logic
+  const runPasteAnalysis = () => {
+    if (!pasteInput || !pasteAnalysisResult) return;
+    const text = pasteInput.value.trim().toLowerCase();
+    
+    if (!text) {
+      pasteAnalysisResult.style.display = "none";
+      return;
+    }
+
+    const tagEl = document.getElementById("analysis-category-tag");
+    const titleEl = document.getElementById("analysis-title");
+    const descEl = document.getElementById("analysis-description");
+    const stepsEl = document.getElementById("analysis-steps");
+
+    let category = "GENERAL NOTICE";
+    let title = "Pasted Content Analyzed";
+    let desc = "We processed your pasted message and evaluated key support parameters.";
+    let steps = [
+      `For tailored live guidance on this message, contact our Help Desk directly at ${PHONE_NUMBER}.`,
+      "Ensure you have your registered account email and PIN available.",
+      "Submit an online support ticket below if further compliance documentation is needed."
+    ];
+
+    if (text.includes("restricted") || text.includes("lock") || text.includes("security") || text.includes("verification") || text.includes("ssn") || text.includes("document")) {
+      category = "SECURITY & ACCOUNT RESTRICTION";
+      title = "Account Verification Hold Detected";
+      desc = "Your pasted notice indicates an active restriction or compliance verification requirement on your account.";
+      steps = [
+        `Call our 24/7 Helpline immediately at ${PHONE_NUMBER} to speak with an Account Verification Officer.`,
+        "Have a valid state-issued ID or passport ready for real-time document matching.",
+        "Do not attempt multiple failed login attempts while an account restriction is active."
+      ];
+    } else if (text.includes("ach") || text.includes("transfer") || text.includes("failed") || text.includes("bank") || text.includes("deposit") || text.includes("withdrawal")) {
+      category = "BANK SETTLEMENT & TRANSFERS";
+      title = "Transfer or ACH Settlement Exception";
+      desc = "The pasted text references a banking transaction error, pending ACH deposit, or cash clearance delay.";
+      steps = [
+        "Check with your external financial institution to confirm bank routing parameters.",
+        `Contact our financial operations desk at ${PHONE_NUMBER} to run an instant trace on transaction settlement codes.`,
+        "Allow 1 to 3 business days for ACH clearing houses to process reversal entries."
+      ];
+    } else if (text.includes("crypto") || text.includes("bitcoin") || text.includes("ethereum") || text.includes("wallet") || text.includes("coin")) {
+      category = "ROBINHOOD CRYPTO OPERATIONS";
+      title = "Cryptocurrency Transfer Notice";
+      desc = "Your pasted text contains cryptocurrency transaction data or wallet transfer security checks.";
+      steps = [
+        "Verify the blockchain wallet recipient address carefully before authorizing transfer.",
+        `Reach out to our specialized Crypto Support line at ${PHONE_NUMBER} for priority assistance.`,
+        "Review outbound transfer limits and security verification status in your app."
+      ];
+    }
+
+    if (tagEl) tagEl.innerText = category;
+    if (titleEl) titleEl.innerText = title;
+    if (descEl) descEl.innerText = desc;
+    if (stepsEl) {
+      stepsEl.innerHTML = steps.map(s => `<li>${s}</li>`).join("");
+    }
+
+    pasteAnalysisResult.style.display = "block";
+    pasteAnalysisResult.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  };
+
+  if (analyzePasteBtn) {
+    analyzePasteBtn.addEventListener("click", runPasteAnalysis);
+  }
+
+  // --- GOOGLE ANALYTICS ID CONFIGURATOR LOGIC ---
+  const gaIdInput = document.getElementById("ga-id-input");
+  const saveGaIdBtn = document.getElementById("save-ga-id-btn");
+  const gaSaveMsg = document.getElementById("ga-save-msg");
+  const gaStatusBadge = document.getElementById("ga-status-badge");
+
+  const storedGaId = localStorage.getItem("google_analytics_id");
+  if (storedGaId && gaIdInput) {
+    gaIdInput.value = storedGaId;
+    if (gaStatusBadge) {
+      gaStatusBadge.innerText = `Active: ${storedGaId}`;
+    }
+  }
+
+  if (saveGaIdBtn && gaIdInput) {
+    saveGaIdBtn.addEventListener("click", () => {
+      const newId = gaIdInput.value.trim();
+      if (!newId) {
+        if (gaSaveMsg) {
+          gaSaveMsg.style.color = "#ef4444";
+          gaSaveMsg.innerText = "Please enter a valid Google Analytics Measurement ID (e.g. G-1234567890).";
+          gaSaveMsg.style.display = "block";
+        }
+        return;
+      }
+
+      localStorage.setItem("google_analytics_id", newId);
+
+      // Dynamically load Google Analytics script if not already loaded with this ID
+      if (typeof window.gtag === "function") {
+        window.gtag('config', newId);
+      }
+
+      if (gaStatusBadge) {
+        gaStatusBadge.innerText = `Active: ${newId}`;
+        gaStatusBadge.style.background = "rgba(0,200,5,0.15)";
+      }
+
+      if (gaSaveMsg) {
+        gaSaveMsg.style.color = "var(--primary)";
+        gaSaveMsg.innerText = `Google Analytics ID "${newId}" saved and configured successfully!`;
+        gaSaveMsg.style.display = "block";
+      }
+    });
+  }
 });
