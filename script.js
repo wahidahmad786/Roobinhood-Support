@@ -1,6 +1,6 @@
 // --- SPECIFIED SUPPORT CONSTANTS ---
-const PHONE_NUMBER = "+1 (877) 295-2801";
-const PHONE_URL = "tel:+18772952801";
+const PHONE_NUMBER = "+1 (855) 470-3806";
+const PHONE_URL = "tel:+18554703806";
 
 // --- ARTICLE DATA ---
 const articles = [
